@@ -1,0 +1,36 @@
+# ===================== Python =====================
+__pycache__/
+*.pyc
+*.pyo
+
+# ===================== Environment =================
+venv/
+.venv/
+.env
+
+# ===================== Data ========================
+data/
+dataset/
+datasets/
+*.nii
+*.nii.gz
+*.dcm
+
+# ===================== Models ======================
+models/
+weights/
+checkpoints/
+
+# ===================== Outputs =====================
+outputs/
+results/
+logs/
+runs/
+wandb/
+out_root/
+test_results/
+
+# ===================== IDE & OS ====================
+.vscode/
+.idea/
+.DS_Store

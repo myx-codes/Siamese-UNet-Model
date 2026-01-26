@@ -1,0 +1,99 @@
+# PROJECT PATHS CONFIGURATION
+paths:
+  data_root: "./data"                  # Root directory where data is located
+  dicom_root: "./data/dicom"           # Location of CT files in DICOM format
+  mask_root: "./data/mask"             # Ground-truth segmentation masks
+  patients_csv: "./data/input.csv"     # CSV list of all patients for training/validation
+  test_patients_csv: "./data/test_input.csv"  # CSV list of patients for the testing phase
+  outputs_root: "./outputs"             # Directory to save all results (logs, models, plots)
+  splits_json: "./outputs/splits/patient_split_train_val.json"  # JSON file storing train/validation data split info
+
+
+# DATA LOADING & PREPROCESSING SETTINGS
+data:
+  img_size: [512, 512]                  # Input CT slice size (H, W)
+  in_channels: 25                       # Number of input channels for the model (z-context + HU windows)
+
+  hu_windows:                           # HU (Hounsfield Unit) windows for CT intensity processing
+    - [-400, 1600]                      # Soft tissue + bone (general range)
+    - [40, 400]                         # Muscle-focused window
+    - [-30, 80]                         # Narrow soft tissue window
+    - [-150, 2000]                      # Extended dynamic range
+    - [-1000, -300]                     # Fat-dominant region
+
+  z_context: 2                          # Number of adjacent slices (before and after) for each slice
+  paired: true                          # Whether to work with Inhale-Exhale pairs
+  pair_mode: "same_z"                  # Pairing strategy (based on same z-index)
+  val_percent: 0.2                     # Percentage of data reserved for validation
+
+
+# MODEL ARCHITECTURE SETTING
+model:
+  name: "siamese_scjag_unet"            # Model name (Siamese SCJAG U-Net)
+  embed_dim: 128                        # Dimension of the embedding latent space
+  decoders: "shared"                   # Whether decoders are shared or separate
+  dropout: 0.1                          # Dropout probability for regularization
+
+
+# LOSS FUNCTION CONFIGURATION
+loss:
+  bce_weight: 0.5                       # Binary Cross Entropy (BCE) loss weight
+  dice_weight: 0.5                      # Dice loss weight
+
+  focal_tversky_weight: 0.0             # Focal Tversky loss weight (disabled)
+  tversky_alpha: 0.7                    # Penalty for False Negatives
+  tversky_beta: 0.3                     # Penalty for False Positives
+  tversky_gamma: 2.0                    # Focal intensity parameter
+
+  adv_enabled: true                     # Domain adversarial learning enabled
+  lambda_adv: 0.05                      # Weight of adversarial loss in total loss
+  adv_mode: "domain_adversarial"        # Adversarial strategy mode (e.g., "contrastive")
+  emb_consistency: "l2"                # L2 loss for Inhale/Exhale embedding consistency
+
+
+# TRAINING PARAMETERS
+train:
+  epochs: 100                           # Maximum number of training epochs
+  batch_size: 16                        # Batch size
+  lr: 0.0015                            # Initial learning rate
+  weight_decay: 0.0005                 # L2 regularization (Weight Decay) coefficient
+
+  amp: true                             # Whether to use Automatic Mixed Precision (AMP)
+  warmup_epochs: 5                     # Number of learning rate warm-up epochs
+  cosine_final_lr: 1.0e-05             # Final learning rate value for Cosine scheduler
+
+  gradient_clip_val: 1.0               # Gradient clipping value to prevent explosion
+  ema_decay: 0.999                     # Exponential Moving Average (EMA) decay rate
+
+  early_stopping:                      # Mechanism to prevent overfitting
+    enabled: true                      # Enable early stopping
+    monitor: "val_dice"               # Metric to monitor
+    mode: "max"                       # Select based on maximum value
+    patience: 15                       # Number of epochs to wait without improvement
+
+  log_loss_components: true             # Log each loss component individually
+  log_components_in_val_only: true      # Log components only during validation phase
+
+  device: "cuda:3"                     # GPU device to use
+  gpu_ids: "3"                         # GPU IDs (for DataParallel)
+  num_workers: 8                       # Number of workers for training DataLoader
+  num_workers_val: 4                   # Number of workers for validation DataLoader
+
+
+# EVALUATION & TEST SETTINGS
+eval:
+  threshold: 0.5                       # Binary segmentation threshold
+  tta_flip: true                       # Use TTA (Test Time Augmentation) - flip
+  tta_rot90: false                     # 90-degree rotation TTA (disabled)
+
+  metrics_mode: "both"                 # Options: full | trim | both
+  trim_head_pct: 10                    # Percentage to exclude from the start of the slice stack
+  trim_tail_pct: 20                    # Percentage to exclude from the end of the slice stack
+
+  overlays: sampled                    # Options: all | sampled -> "all" = all slices, "sampled" = selected samples
+  overlays_sample_k: 4                 # Number of overlays to save per test sample
+  debug: false                         # Debug mode
+
+
+# REPRODUCIBILITY
+seed: 2025                            
